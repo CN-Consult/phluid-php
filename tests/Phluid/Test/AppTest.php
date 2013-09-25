@@ -119,7 +119,8 @@ class AppTest extends TestCase {
   }
   
   public function testPostRequest(){
-    
+
+    $that = $this;
     $this->app->post( '/robot', function( $request, $response ){
       $body = "";
       $request->on( 'data', function( $data ) use ( &$body ){
@@ -131,8 +132,8 @@ class AppTest extends TestCase {
     } );
     
     $response = $this->doRequest( 'POST', '/robot', array(), array(), false );
-    $response->on( 'end', function() use( $response ){
-      $this->assertSame( '18', $this->getBody() );
+    $response->on( 'end', function() use( $response, $that ){
+      $that->assertSame( '18', $that->getBody() );
     });
     
     $this->send( '?something=awesome' );

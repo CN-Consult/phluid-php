@@ -117,6 +117,7 @@ class Response extends EventEmitter implements WritableStreamInterface {
   }
   
   public function sendFile( $path, $options_or_status = array(), $status = 200 ){
+    $that = $this;
     if ( is_int( $options_or_status )) {
       $status = $options_or_status;
       $options = array();
@@ -143,13 +144,13 @@ class Response extends EventEmitter implements WritableStreamInterface {
         fclose( $handle );
       });
       
-      $readFile = function() use ( $handle ){
+      $readFile = function() use ( $handle, $that ){
         while( $string = fread( $handle, 2048 ) ){
           if ( feof( $handle ) ) {
-            $this->end( $string );
+            $that->end( $string );
             return;
           } else {
-            if( !$this->write( $string ) ) return;
+            if( !$that->write( $string ) ) return;
           }
         }
       };

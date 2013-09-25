@@ -38,7 +38,7 @@ class Route {
       $filters = $this->filters;
       $action = $this->action;
       $filters( $request, $response, function() use ( $request, $response, $next, $action ) {
-        $action( $request, $response, $next );
+          call_user_func_array($action, array($request, $response, $next ));
       } );
     } else {
       $next();

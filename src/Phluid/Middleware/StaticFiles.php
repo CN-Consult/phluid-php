@@ -102,6 +102,7 @@ class PartialFileStreamer {
   }
   
   public function send(){
+    $that = $this;
     $handle = fopen( $this->path, 'r' );
     $info = fstat( $handle );
     $size = $info['size'];
@@ -130,8 +131,8 @@ class PartialFileStreamer {
             
       $this->response->sendHeaders( 206 );
       $part = new RangePart( $this->response, $this->content_type, null, $handle, $range );
-      $part->once( 'end', function(){
-        $this->response->end();
+      $part->once( 'end', function() use ( $that ){
+        $that->response->end();
       });
       $part->send( true );
       
@@ -148,12 +149,13 @@ class PartialFileStreamer {
     }
         
   }
-  
+
   private function writeParts( $parts, $boundary ){
+    $that = $this;
     // write the boundary
     if( $part = array_shift( $parts ) ){
-      $part->once( 'end', function() use ( $parts, $boundary ){
-        $this->writeParts( $parts, $boundary );
+      $part->once( 'end', function() use ( $parts, $boundary, $that ){
+        $that->writeParts( $parts, $boundary );
       } );
       $part->send();
     } else {
@@ -206,16 +208,19 @@ class RangePart extends EventEmitter {
   }
   
   function send(){
+    $that = $this;
+    $total = $this->total;
+    $written = $this->written;
     rewind( $this->handle );
     if( $this->start > 0 ) fread( $this->handle, $this->start );
-    $send = function() {
-      $length = min( $this->total, 2048 );
-      while( $string = fread( $this->handle, $length ) ){
-        $this->written += strlen( $string );
-        $buffered = $this->response->write( $string );
-        if ( feof( $this->handle ) || $this->total == $this->written ) {
-          if( $this->boundary != null ) $this->response->write("\r\n");
-          $this->emit( 'end' );
+    $send = function() use ( $that, $total, $written ){
+      $length = min( $total, 2048 );
+      while( $string = fread( $that->handle, $length ) ){
+        $written += strlen( $string );
+        $buffered = $that->response->write( $string );
+        if ( feof( $that->handle ) || $total == $written ) {
+          if( $that->boundary != null ) $that->response->write("\r\n");
+            $that->emit( 'end' );
           return;
         }
         if ( !$buffered ) break;

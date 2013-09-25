@@ -40,13 +40,14 @@ class App extends EventEmitter {
   }
   
   public function createServer( HttpServerInterface $http = null ){
+    $that = $this;
     if ( $http === null ) {
       $this->loop = $loop = LoopFactory::create();
       $this->socket = $socket = new SocketServer( $loop );
       $this->http = $http = new Server( $socket, $loop );
     }
-    $http->on( 'request', function( $http_request, $http_response ){
-      $app = $this;
+    $http->on( 'request', function( $http_request, $http_response ) use ( $that ){
+      $app = $that;
       $request = new Request( $http_request );
       $response = new Response( $http_response, $request );
       $app( $request, $response );
@@ -94,7 +95,8 @@ class App extends EventEmitter {
    * @author Beau Collins
    */
   public function __invoke( $request, $response, $next = null ){
-    
+
+    $that = $this;
     $response->setOptions( array(
       'view_path' => $this->view_path,
       'default_layout' => $this->default_layout
@@ -106,8 +108,8 @@ class App extends EventEmitter {
     
     $middlewares = $this->middleware;
     $cascade = new Cascade( $middlewares );
-    $cascade( $request, $response, function( $request, $response, $next ){
-      $this->emit( 'end', array( $request, $response ) );
+    $cascade( $request, $response, function( $request, $response, $next ) use ( $that ) {
+      $that->emit( 'end', array( $request, $response ) );
       $next();
     } );
     
@@ -191,7 +193,7 @@ class App extends EventEmitter {
   
   public function configure( $env, $callback = null ){
     if( func_num_args() == 2 ){
-      $env = is_array( $env ) ? $env : [$env];
+      $env = is_array( $env ) ? $env : Array($env);
     } else {
       // no environment specific so always run
       $callback( $this );

@@ -27,12 +27,19 @@ class View {
   public function render( $locals = array(), $content = null ){
     
     $path = $this->fullPath();
-    $compile = function( $path, $locals ) {
-      extract($locals);
-      return @include $path;
-    };
     $context = new ViewContext( $this->path, $content );
-    $render = $compile->bindTo( $context );
+    $compile = function( $path, $locals ) use ($context) {
+      extract($locals);
+      $templateCode=file_get_contents($path);
+      $fixedCode=str_replace("\$this->","\$context->",$templateCode);
+      $fixedPath=$path.".fixed.php";
+      file_put_contents($fixedPath,$fixedCode);
+      @include $fixedPath;
+      unlink($fixedPath);
+      return true;
+    };
+
+    $render = $compile;//$compile->bindTo( $context );
     ob_start();
     $included = $render( $path, $locals );
     $content = ob_get_clean();

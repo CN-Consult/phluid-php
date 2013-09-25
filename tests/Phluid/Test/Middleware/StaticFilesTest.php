@@ -18,7 +18,8 @@ class StaticFileTest extends TestCase {
     $response = $this->doRequest( 'GET', '/hello_world.txt' );
         
     $this->assertSame( 200, $response->getStatus() );
-    $this->assertSame( 'Hello world', explode( "\n", $this->getBody() )[0] );
+    $bodyLines = explode( "\n", $this->getBody() );
+    $this->assertSame( 'Hello world', $bodyLines[0] );
     $this->assertSame( $response->getHeader( 'Content-Type'), 'text/plain' );
     
     

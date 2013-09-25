@@ -17,11 +17,12 @@ class CacheTest extends TestCase {
     $response = $this->doRequest( 'GET', '/style.css' );
     $lastModified = $response->getHeader( 'last-modified' );
     $this->assertNotNull( $lastModified );
-    
-    $response = $this->doRequest( 'GET', '/style.css', array(), array(
+    $test = $this;
+
+      $response = $this->doRequest( 'GET', '/style.css', array(), array(
       'If-Modified-Since' => $lastModified
-    ), function( $req, $res ){
-      $this->assertSame( $res->getStatus(), 304 );
+    ), function( $req, $res ) use ( $test ) {
+      $test->assertSame( $res->getStatus(), 304 );
     } );
   
   }

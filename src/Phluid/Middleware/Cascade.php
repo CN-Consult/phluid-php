@@ -18,12 +18,13 @@ class Cascade {
     $this->runMiddlewares( $middlewares, $request, $response, $next );
   }
   
-  private function runMiddlewares( $middlewares, $request, $response, $final ){
+  public function runMiddlewares( $middlewares, $request, $response, $final ){
+    $that = $this;
     // pull off a middleware
     if( $middleware = array_shift( $middlewares ) ){
-      $middleware( $request, $response, function() use( $middlewares, $request, $response, $final ){
-        $this->runMiddlewares( $middlewares, $request, $response, $final );
-      } );      
+      $middleware( $request, $response, function() use( $middlewares, $request, $response, $final, $that ){
+        $that->runMiddlewares( $middlewares, $request, $response, $final );
+      } );
     } else {
       $final();
     }

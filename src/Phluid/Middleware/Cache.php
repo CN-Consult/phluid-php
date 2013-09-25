@@ -5,8 +5,8 @@ use Phluid\Exception;
 class Cache {
   
   function __invoke( $req, $res, $next ){
-        
-    $res->once( 'headers', function() use ( $req, $res ){
+    $that = $this;
+    $res->once( 'headers', function() use ( $req, $res, $that ){
       // if-modified, if-not-modified, etags, range
       $match = $req->getHeader( 'If-Match' );
       $noneMatch = $req->getHeader( 'If-None-Match' );
@@ -22,16 +22,16 @@ class Cache {
       }
       
       if ( !empty( $modifiedSince ) && !empty( $lastModified ) ) {
-        $last = $this->parseDate( $lastModified );
-        $since = $this->parseDate( $modifiedSince );
+        $last = $that->parseDate( $lastModified );
+        $since = $that->parseDate( $modifiedSince );
         if ( $last <= $since ) {
           throw new ResponseUnmodifiedException();
         } 
       }
       
       if ( !empty( $unmodifiedSince ) && !empty( $lastModified ) ) {
-        $last = $this->parseDate( $lastModified );
-        $since = $this->parseDate( $modifiedSince );
+        $last = $that->parseDate( $lastModified );
+        $since = $that->parseDate( $modifiedSince );
         if ( $last > $since ) {
           throw new ResponseModifiedException();
         }

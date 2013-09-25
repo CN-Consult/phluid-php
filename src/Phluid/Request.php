@@ -19,16 +19,12 @@ class Request extends EventEmitter implements ReadableStreamInterface {
     $this->request = $request;
     $this->headers = RequestHeaders::fromHttpRequest( $request );
     $this->query = $request->getQuery();
-    
+    $that = $this;
+
     // forward the events data, end, close
     Utils::forwardEvents( $this, $request, array( 'pipe', 'data', 'close', 'error' ) );
     
-    $request->on( 'end', function(){
-      if ( !$this->ended ) {
-        $this->ended = true;
-        $this->emit( 'end' );
-      }
-    });
+    $request->on( 'end', array($this,"emitEnd"));
     
     // we need to determine when a request has ended since React\Http\Server
     // doesn't do it for us
@@ -36,18 +32,25 @@ class Request extends EventEmitter implements ReadableStreamInterface {
       $total_length = $this->getContentLength();
       if ( $total_length != null) {
         $seen_length = 0;
-        $request->on( 'data', function( $data ) use ( $total_length, &$seen_length ){
+        $request->on( 'data', function( $data ) use ( $total_length, &$seen_length, $that ){
           $seen_length += strlen( $data );
           if ( $seen_length >= $total_length ) {
             // TODO: should we wait for the next tick in the event loop?
-            $this->ended = true;
-            $this->emit( 'end' );
+            $that->emitEnd();
           }
         } );
       }
       
     }
     
+  }
+
+  public function emitEnd()
+  {
+    if ( !$this->ended ) {
+        $this->ended = true;
+        $this->emit( 'end' );
+    }
   }
   
   public function __toString(){

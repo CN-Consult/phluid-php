@@ -19,9 +19,10 @@ class PredisStore implements SessionStoreInterface {
   }
   
   public function find( $sid, $fn ){
-    $callback = function () use ( $sid, $fn ) {
-      $id = $this->namespaceId( $sid );
-      $this->client->get( $id , function( $data, $client ) use ($fn){
+    $that = $this;
+    $callback = function () use ( $sid, $fn, $that ) {
+      $id = $that->namespaceId( $sid );
+      $that->client->get( $id , function( $data, $client ) use ($fn){
         if ( $data ) $data = json_decode( $data, true );
         $fn( $data );
       });
@@ -30,10 +31,11 @@ class PredisStore implements SessionStoreInterface {
   }
   
   public function save( $sid, $session, $fn ){
-    $callback = function() use ( $sid, $session, $fn ){
+    $that = $this;
+    $callback = function() use ( $sid, $session, $fn, $that ){
       $data = json_encode( $session );
-      $id = $this->namespaceId( $sid );
-      $this->client->set( $id, $data, function( $res, $client ) use ($fn){
+      $id = $that->namespaceId( $sid );
+      $that->client->set( $id, $data, function( $res, $client ) use ($fn){
         $fn();
       });
     };
@@ -41,9 +43,10 @@ class PredisStore implements SessionStoreInterface {
   }
   
   public function destroy( $sid, $fn ){
+    $that = $this;
     $id = $this->namespaceId( $sid );
-    $this->buffer( function() use ( $sid, $fn ){
-      $this->client->del( $id, function() use ( $fn ){
+    $this->buffer( function() use ( $sid, $fn, $that ){
+      $that->client->del( $id, function() use ( $fn ){
         $fn();
       });
     });
@@ -65,9 +68,10 @@ class PredisStore implements SessionStoreInterface {
   }
   
   private function connect(){
-    $this->client->connect( function( $client ){
-      $this->connected = true;
-      $this->emptyBuffer();
+    $that = $this;
+    $this->client->connect( function( $client ) use ( $that ) {
+      $that->connected = true;
+      $that->emptyBuffer();
     });
   }
   

@@ -24,6 +24,7 @@ class Sessions {
   }
   
   function __invoke( $request, $response, $next ){
+    $that = $this;
     if ( !property_exists( $request, 'cookies' ) ){
       echo "Warning! " . __CLASS__ . " requires Phluid\\Middleware\\Cookies" . PHP_EOL ;
       return $next();
@@ -31,17 +32,17 @@ class Sessions {
     if ( property_exists( $request, 'session' ) ) return $next();
     $request->sessionStore = $this->store;
     $request->sessionId = $sid = $this->getValidSessionId( $request );
-    $response->on( 'end', function() use ( $request, $next ) {
-      $this->store->save( $request->sessionId, $request->session->getData(), function(){} );
+    $response->on( 'end', function() use ( $request, $next, $that ) {
+      $that->store->save( $request->sessionId, $request->session->getData(), function(){} );
     });
     if ( !$sid ) {
       $this->generate( $request );
       $response->cookies[$this->key] = new Cookie( $this->signSessionId( $request->sessionId, $this->secret ), $this->cookie );
       return $next();
     }
-    $this->store->find( $sid, function( $data ) use ($request, $next, $sid ) {
+    $this->store->find( $sid, function( $data ) use ($request, $next, $sid, $that ) {
       if ( !$data ) {
-        $this->generate( $request, $sid );
+        $that->generate( $request, $sid );
       } else {
         $request->session = new Session( $request, $data );        
       }

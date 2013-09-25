@@ -18,7 +18,8 @@ class MultipartBodyParser {
   }
   
   function __invoke( $request, $response, $next ){
-    
+
+    $that = $this;
     if ( $request->getMethod() == 'GET' || $request->getMethod() == 'HEAD') {
       return $next();
     }
@@ -28,8 +29,9 @@ class MultipartBodyParser {
       // split the body on $boundary
       $parser = new MultipartStreamParser( $this->upload_dir, $boundary );
       $request->pipe( $parser );
-      $parser->on( 'end', function( $content, $uploads ) use ( $request, $response, $next ){
-        if( $this->cleanup && count( $uploads ) > 0 ){
+      $cleanup=$this->cleanup;
+      $parser->on( 'end', function( $content, $uploads ) use ( $request, $response, $next, $that, $cleanup ){
+        if( $cleanup && count( $uploads ) > 0 ){
           $response->once( 'end', function() use ( $uploads ){
             foreach ( $uploads as $upload ) {
               unlink( $upload->content );
@@ -97,6 +99,7 @@ class MultipartStreamParser extends EventEmitter implements WritableStreamInterf
   }
   
   private function parseHeader(){
+    $that = $this;
     if( !$this->buffer->containsString( $this->boundary ) ) return;
     $this->buffer->chop( $this->boundary );
     if ( !$this->buffer->containsString( MULTIPART_HEADER_END_STRING ) ) return;
@@ -104,10 +107,12 @@ class MultipartStreamParser extends EventEmitter implements WritableStreamInterf
     // let's start parsing the part
     $this->currentPart = new MultipartPartParser( $header, $this->directory );
     // write the rest of the buffer to the part
-    $this->currentPart->once( 'end', function( $part ){
-      $this->addPartAtQueryPath( $part->name, $part, $this->content );
+    $content=$this->content;
+    $uploads=$this->uploads;
+    $this->currentPart->once( 'end', function( $part ) use ( $that, $content, $uploads ){
+      $that->addPartAtQueryPath( $part->name, $part, $content );
       if ( $part->isFile() ) {
-        array_push( $this->uploads, $part );
+        array_push( $uploads, $part );
       }
     });
     $this->parse();

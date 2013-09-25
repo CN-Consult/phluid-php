@@ -18,8 +18,9 @@ class BasicAuth {
   }
   
   function __invoke( $request, $response, $next ){
-    $unauthorized = function() use ($request, $response, $next ){
-      $action = $this->unauthorizedAction;
+    $that = $this;
+    $unauthorized = function() use ($request, $response, $next, $that ){
+      $action = $that->unauthorizedAction;
       $action( $request, $response, $next );
     };
     $authorized = function( $user ) use ( $request, $next ){
