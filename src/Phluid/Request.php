@@ -1,29 +1,31 @@
 <?php
 namespace Phluid;
-use React\Http\Request as HttpRequest;
 use Evenement\EventEmitter;
+use Psr\Http\Message\ServerRequestInterface;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
 use React\Stream\Util as StreamUtil;
 
 
 class Request extends EventEmitter implements ReadableStreamInterface {
-  
-  private $request;
+
+  /** @var ReadableStreamInterface $requestBody */
+  private $requestBody;
   private $headers;
+  public $query;
   public $method;
   public $path;
   private $ended = false;
   
-  function __construct( HttpRequest $request ){
-    $this->request = $request;
+  function __construct( ServerRequestInterface $request ){
+    $this->requestBody = $request->getBody();
     $this->headers = RequestHeaders::fromHttpRequest( $request );
-    $this->query = $request->getQuery();
+    $this->query = $request->getQueryParams();
     
     // forward the events data, end, close
-    Utils::forwardEvents( $this, $request, array( 'pipe', 'data', 'close', 'error' ) );
-    
-    $request->on( 'end', function(){
+    Utils::forwardEvents( $this, $this->requestBody, array( 'pipe', 'data', 'close', 'error' ) );
+
+    $this->requestBody->on( 'end', function(){
       if ( !$this->ended ) {
         $this->ended = true;
         $this->emit( 'end' );
@@ -36,7 +38,7 @@ class Request extends EventEmitter implements ReadableStreamInterface {
       $total_length = $this->getContentLength();
       if ( $total_length != null) {
         $seen_length = 0;
-        $request->on( 'data', function( $data ) use ( $total_length, &$seen_length ){
+        $this->requestBody->on( 'data', function( $data ) use ( $total_length, &$seen_length ){
           $seen_length += strlen( $data );
           if ( $seen_length >= $total_length ) {
             // TODO: should we wait for the next tick in the event loop?
@@ -66,13 +68,17 @@ class Request extends EventEmitter implements ReadableStreamInterface {
   public function getPath(){
     return $this->headers->path;
   }
+
+  public function getProtocolVersion(){
+  	return $this->headers->version;
+  }
   
   public function setPath( $path ){
     $this->headers->path = $path;
   }
       
   public function param( $param ){
-    if ( $this->params && array_key_exists( $param, $this->params ) ) {
+    if ( isset($this->params) && array_key_exists( $param, $this->params ) ) {
       return $this->params[ $param ];
     } else if( $this->query && array_key_exists( $param, $this->query ) ){
       return $this->query[ $param ];
@@ -100,23 +106,25 @@ class Request extends EventEmitter implements ReadableStreamInterface {
   }
   
   public function isReadable(){
-    return $this->request->isReadable();
+    return $this->requestBody->isReadable();
   }
   
   public function pause() {
-    return $this->request->pause();
+    return $this->requestBody->pause();
   }
   
   public function resume(){
-    return $this->request->resume();
+    return $this->requestBody->resume();
   }
   
   public function pipe(WritableStreamInterface $dest, array $options = array()){
-    return StreamUtil::pipe( $this, $dest, $options );
+    StreamUtil::pipe( $this, $dest, $options );
   }
   
-  public function close(){
-    return $this->request->close();
+  public function close()
+  {
+    $this->emit("end");
+    $this->requestBody->close();
   }
   
   

@@ -1,15 +1,15 @@
 <?php
 namespace Phluid;
-use React\Http\Request as HttpRequest;
+use Psr\Http\Message\ServerRequestInterface;
 
 class RequestHeaders extends Headers {
   
-  public static function fromHttpRequest( HttpRequest $request ){
+  public static function fromHttpRequest( ServerRequestInterface $request ){
      return new RequestHeaders(
        $request->getMethod(),
-       $request->getPath(),
-       $request->getQuery(),
-       $request->getHttpVersion(),
+       $request->getRequestTarget(),
+       $request->getQueryParams(),
+       $request->getProtocolVersion(),
        $request->getHeaders()
      );
   }

@@ -2,21 +2,36 @@
 namespace Phluid;
 use React\Http\Response as HttpResponse;
 use Evenement\EventEmitter;
+use React\Stream\ThroughStream;
 use React\Stream\WritableStreamInterface;
-use React\Stream\Util;
 
 class Response extends EventEmitter implements WritableStreamInterface {
   
   private $options = array();
-  private $response;
+
+  /** @var ThroughStream $responseBody */
+  private $responseBody;
+
+  /** @var string $rawResponseBody */
+  private $rawResponseBody;
+
+  /** @var Request  */
   private $request;
+
+  /** @var ResponseHeaders|array $headers  */
   private $headers;
   
-  function __construct( HttpResponse $http_response, Request $request ){
+  function __construct(Request $request ){
     $this->request = $request;
-    $this->response = $http_response;
+    $this->responseBody = new ThroughStream();
+    $this->rawResponseBody = "";
+
+    $this->responseBody->on("data", function($_data){
+    	$this->rawResponseBody .= $_data;
+    });
+
     $this->headers = new ResponseHeaders( 200, 'Success' );
-    Utils::forwardEvents( $this, $http_response, array( 'error', 'end', 'drain' ) );
+    Utils::forwardEvents( $this, $this->responseBody, array( 'error', 'end', 'drain' ) );
     $date = new \DateTime( 'now' );
     $this->setHeader( 'Date', $date->format( \DateTime::RFC1123 ) );
     
@@ -64,9 +79,6 @@ class Response extends EventEmitter implements WritableStreamInterface {
     $this->headers->status = $status;
   }
   
-  public function writeHead( $status = 200, array $headers = array() ){
-    $this->response->writeHead( $status, $headers );
-  }
   
   public function sendHeaders( $status_or_headers = 200, $headers = array() ){
     if ( !is_null( $status_or_headers ) and is_int( $status_or_headers ) ) {
@@ -76,7 +88,6 @@ class Response extends EventEmitter implements WritableStreamInterface {
     }
     $this->setHeaders( $headers );
     $this->emit( 'headers' );
-    $this->writeHead( $this->headers->status, $this->headers->toArray() );
   }
   
   public function render( $template, $locals = array(), $options = array() ){
@@ -162,17 +173,32 @@ class Response extends EventEmitter implements WritableStreamInterface {
   }
   
   public function isWritable(){
-    return $this->response->isWritable();
+    return $this->responseBody->isWritable();
   }
   public function write( $data ){
-    return $this->response->write( $data );
+    return $this->responseBody->write( $data );
   }
   public function end( $data = null ){
-    return $this->response->end( $data );
+  	$this->responseBody->end( $data );
   }
   
   public function close(){
-    return $this->response->close();
+  	$this->responseBody->close();
+  }
+
+  /**
+   * Creates and returns a React http response from the data that is stored in this Response.
+   *
+   * @return HttpResponse The generated http response
+   */
+  public function getHttpResponse()
+  {
+  	return new HttpResponse(
+  		$this->headers->status,
+	    $this->headers->toArray(),
+	    $this->rawResponseBody,
+	    $this->request->getProtocolVersion()
+    );
   }
   
   

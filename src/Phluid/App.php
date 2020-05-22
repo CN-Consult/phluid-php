@@ -2,9 +2,12 @@
 
 namespace Phluid;
 
-use React\Http\Server;
+use Evenement\EventEmitterInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use React\EventLoop\LoopInterface;
 use Phluid\Middleware\Router;
-use React\Http\ServerInterface as HttpServerInterface;
+use React\Http\StreamingServer;
+use React\Promise\Promise;
 use React\Socket\Server as SocketServer;
 use Phluid\Middleware\Cascade;
 use React\EventLoop\Factory as LoopFactory;
@@ -38,29 +41,49 @@ class App extends EventEmitter {
     $this->router = new Router();
     
   }
+
+
+  /**
+   * Sets the loop that should be used when creating and running the HTTP server.
+   *
+   * @param LoopInterface $_loop The loop to use
+   */
+  public function setLoop(LoopInterface $_loop)
+  {
+  	$this->loop = $_loop;
+  }
   
-  public function createServer( HttpServerInterface $http = null ){
+  public function createServer( $uri, EventEmitterInterface $http = null ){
     if ( $http === null ) {
-      $this->loop = $loop = LoopFactory::create();
-      $this->socket = $socket = new SocketServer( $loop );
-      $this->http = $http = new Server( $socket, $loop );
+
+      if (!$this->loop) $this->loop = LoopFactory::create();
+      $this->socket = new SocketServer( $uri, $this->loop );
+      $this->http = new StreamingServer(function(ServerRequestInterface $httpRequest) {
+	    return new Promise(function ($resolve, $reject) use ($httpRequest) {
+	      $request = new Request($httpRequest);
+	      $response = new Response($request);
+
+	      $response->on("end", function() use ($resolve, $response){
+	        $resolve($response->getHttpResponse());
+	      });
+
+	      $app = $this;
+	      $app($request, $response);
+	    });
+      });
+
+      $this->http->listen($this->socket);
     }
-    $http->on( 'request', function( $http_request, $http_response ){
-      $app = $this;
-      $request = new Request( $http_request );
-      $response = new Response( $http_response, $request );
-      $app( $request, $response );
-      
-    });
+
     return $this;
   }
   
-  public function listen( $port, $host = '127.0.0.1' ){
+  public function listen( $port, $host = '127.0.0.1', $_startLoop = true ){
     if ( !$this->http ) {
-      $this->createServer();
+      $this->createServer($host . ":" . $port);
     }
-    $this->socket->listen( $port, $host );
-    $this->loop->run();
+
+    if ($_startLoop) $this->loop->run();
     return $this;
   }
   

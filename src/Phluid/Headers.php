@@ -12,7 +12,7 @@ class Headers implements \ArrayAccess {
     
     $that = $this;
     foreach ( $headers as $key => $value) {
-      $that[$key] = $value;
+      $that[$key] = join("\r\n", $value);
     }
   }
   
