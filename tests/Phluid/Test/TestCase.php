@@ -1,8 +1,9 @@
 <?php
 namespace Phluid\Test;
 use Phluid\App;
-use React\Http\Request as HttpRequest;
-use React\Http\Response as HttpResponse;
+use React\Http\Io\EmptyBodyStream;
+use React\Http\Io\HttpBodyStream;
+use React\Http\Io\ServerRequest as HttpRequest;
 use Phluid\Request;
 use Phluid\Response;
 
@@ -16,7 +17,7 @@ class TestCase extends \PHPUnit_Framework_TestCase {
       $response->renderText('Hello World');
     } );
     $this->http = new Server();
-    $this->app->createServer( $this->http );
+    $this->app->createServer( "127.0.0.1:4000", $this->http );
   }
   
   public function doRequest( $method = 'GET', $path = '/', $query = array(), $headers = array(), $action = false ){
@@ -24,8 +25,7 @@ class TestCase extends \PHPUnit_Framework_TestCase {
     $request = $this->makeRequest( $method, $path, $query, $headers );
     $request->method = $method;
     $request->path = $path;
-    $http_response = new HttpResponse( $this->connection );
-    $this->response = $response = new MockResponse( $http_response, $request );
+    $this->response = $response = new MockResponse( $request );
     $this->app->__invoke( $request, $response );
     if ( !$action ){
      $request->close(); 
@@ -36,7 +36,8 @@ class TestCase extends \PHPUnit_Framework_TestCase {
   }
   
   public function makeRequest( $method = 'GET', $path = '/', $query = array(), $headers = array() ){
-    $request = new HttpRequest( $method, $path, $query, '1.1', $headers );
+    $request = new HttpRequest( $method, $path, $headers, "", "1.1", $query);
+    $request = $request->withBody(new HttpBodyStream(new EmptyBodyStream(), 0));
     $this->request = new Request( $request );
     return $this->request;
   }
@@ -77,8 +78,8 @@ class MockResponse extends Response {
   public $data = "";
   private $capture = false;
   
-  public function writeHead( $status = 200, array $headers = array() ){
-    parent::writeHead( $status, $headers );
+  public function sendHeaders( $status_or_headers = 200, $headers = array() ){
+    parent::sendHeaders( $status_or_headers, $headers );
     $this->capture = true;
   }
   

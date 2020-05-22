@@ -1,7 +1,6 @@
 <?php
 namespace Phluid\Test;
 use Phluid\Response;
-use React\Http\Response as HttpResponse;
 
 class ResponseTest extends TestCase {
     
@@ -35,9 +34,8 @@ class ResponseTest extends TestCase {
   }
   
   function makeResponse(){
-    $http = new HttpResponse( $this->connection );
     $request = $this->makeRequest();
-    return new Response( $http, $request );
+    return new Response( $request );
   }
   
 }

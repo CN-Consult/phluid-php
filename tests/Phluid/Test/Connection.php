@@ -66,6 +66,11 @@ class Connection extends EventEmitter implements ConnectionInterface {
   public function getRemoteAddress(){
       return '127.0.0.1';
   }
+
+  public function getLocalAddress()
+  {
+  	return "127.0.0.1";
+  }
 }
 
 
