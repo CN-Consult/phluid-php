@@ -1,7 +1,5 @@
 <?php
 
-require_once( realpath( '../' ) . '/vendor/autoload.php' );
-  
 $app = new Phluid\App( array(
   'default_layout' => 'layout'
 ) );
@@ -30,19 +28,6 @@ $app->inject( new \Phluid\Middleware\BasicAuth( function( $credentials, $success
   }
 } ) );
 $app->inject( new \Phluid\Middleware\StaticFiles( __DIR__ . '/public' ) );
-
-$app->inject( function( $req, $res, $next ){
-  $reverse = false;
-  $new_path = preg_replace( '/\/reverse\/?$/', '/', $req->path );
-  if ( $new_path !== $req->path ) {
-    $req->path = $new_path;
-    $reverse = true;
-  }
-  $next();
-  if ( $reverse ) {
-    $res->setBody( strrev( $res->getBody() ) );
-  }
-} );
 
 /**
  * Responds to GET / renders plain text "Hello World"
@@ -81,7 +66,7 @@ $app->post( '/upload', new \Phluid\Middleware\MultipartBodyParser(), function( $
 } );
 
 $app->get( '/login', function( $request, $response, $next ){
-  if ( !$request->user ) {
+  if ( !isset($request->user) ) {
     \Phluid\Middleware\BasicAuth::sendUnauthorized( $response );
   } else {
     echo "We have a user: " . $request->user . PHP_EOL;
