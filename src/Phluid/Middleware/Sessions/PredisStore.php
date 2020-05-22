@@ -1,6 +1,5 @@
 <?php
 namespace Phluid\Middleware\Sessions;
-use Phluid\Middleware\Sessions\SessionStoreInterface;
 use Predis\Async\Client as PredisClient;
 
 class PredisStore implements SessionStoreInterface {

@@ -1,6 +1,5 @@
 <?php
 namespace Phluid\Middleware;
-use Phluid\Middleware\Sessions\SessionStoreInterface;
 use Phluid\Middleware\Sessions\Session;
 use Phluid\Utils;
 use Phluid\Middleware\Sessions\MemoryStore;

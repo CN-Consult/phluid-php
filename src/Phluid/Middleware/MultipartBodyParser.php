@@ -1,6 +1,5 @@
 <?php
 namespace Phluid\Middleware;
-use Phluid\Http\Request;
 use Evenement\EventEmitter;
 use React\Stream\WritableStreamInterface;
 
