@@ -1,2 +1,4 @@
 vendor/
 tests/uploads
+.vagrant
+.idea
