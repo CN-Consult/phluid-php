@@ -59,7 +59,7 @@ class PredisStore implements SessionStoreInterface {
   
   private function emptyBuffer(){
     while( count( $this->buffer ) > 0 ){
-      $callback = array_unshift( $this->buffer );
+      $callback = array_shift( $this->buffer );
       $callback();
     }
   }
