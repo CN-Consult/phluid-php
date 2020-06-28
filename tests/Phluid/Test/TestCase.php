@@ -7,9 +7,9 @@ use React\Http\Io\ServerRequest as HttpRequest;
 use Phluid\Request;
 use Phluid\Response;
 
-class TestCase extends \PHPUnit_Framework_TestCase {
+class TestCase extends \PHPUnit\Framework\TestCase {
   
-  function setUp(){
+  function setUp(): void {
     
     $this->connection = new Connection();
     $this->app = new App();

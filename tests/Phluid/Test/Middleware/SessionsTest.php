@@ -41,7 +41,7 @@ class SessionsTest extends TestCase {
     
   }
   
-  function setUp(){
+  function setUp(): void {
     
     parent::setUp();
     

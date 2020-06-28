@@ -106,7 +106,7 @@ class BodyParserTest extends \Phluid\Test\TestCase {
     $this->assertObjectNotHasAttribute( 'body', $this->request );
   }
   
-  function setUp(){
+  function setUp(): void {
     parent::setUp();
     $this->app->post( '/', function( $request, $response ){
       $response->renderText( "done" );
