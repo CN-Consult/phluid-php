@@ -6,7 +6,7 @@ use Phluid\Middleware\StaticFiles;
 
 class CacheTest extends TestCase {
   
-  function setUp(){
+  function setUp(): void {
     parent::setUp();
     $this->app->inject( new Cache() );
     $this->app->inject( new StaticFiles( realpath('.') . '/tests/files' ) );

@@ -109,6 +109,7 @@ class AppTest extends TestCase {
     
   }
   
+  
   public function testExceptionHandler(){
     
     $this->app->inject( new HandleException() );
@@ -117,6 +118,7 @@ class AppTest extends TestCase {
     $this->assertSame( 'Uh, Oh', $this->getBody() );
     
   }
+  
   
   public function testPostRequest(){
     
@@ -136,6 +138,7 @@ class AppTest extends TestCase {
     });
     
     $this->send( '?something=awesome' );
+    self::assertTrue(true);
   }
   
 }

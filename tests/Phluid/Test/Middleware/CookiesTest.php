@@ -58,7 +58,7 @@ class CookiesTest extends TestCase {
     $parser( $request, null, function(){} );
   }
   
-  function setUp(){
+  function setUp(): void {
     parent::setUp();
     $this->app->inject( new Cookies() );
   }
